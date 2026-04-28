@@ -24,14 +24,6 @@ jobs:
       - name: Build Image
         run: scripts/buildprod.sh  
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v3
-        with:
-          version: '>= 363.0.0'
-
-      - name: Use gcloud CLI
-        run: gcloud info
-
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -39,9 +31,15 @@ jobs:
           workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/providers/notely-provider
           service_account: cloud-run-deployer@celtic-sunlight-443602-k1.iam.gserviceaccount.com
 
-      - name: Set up Cloud SDK (again)
-        uses: google-github-actions/setup-gcloud@v3
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: '>= 363.0.0'
+
+      - name: Use gcloud CLI
+        run: gcloud info
+        
       - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
