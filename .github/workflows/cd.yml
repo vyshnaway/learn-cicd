@@ -24,12 +24,6 @@ jobs:
       - name: Build Image
         run: scripts/buildprod.sh  
 
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/providers/notely-provider
-          service_account: cloud-run-deployer@celtic-sunlight-443602-k1.iam.gserviceaccount.com
-
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
         with:
@@ -38,5 +32,22 @@ jobs:
       - name: Use gcloud CLI
         run: gcloud info
 
-      - name: Submit Image
-        run: gcloud builds submit --tag us-central1-docker.pkg.dev/celtic-sunlight-443602-k1/notely-ar-repo/IMAGE:latest .
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/providers/notely-provider
+          service_account: cloud-run-deployer@celtic-sunlight-443602-k1.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK (again)
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Submit Image to Artifact Registry
+        run: |
+          gcloud builds submit \
+            --tag us-central1-docker.pkg.dev/celtic-sunlight-443602-k1/notely-ar-repo/app:latest \
+            .
