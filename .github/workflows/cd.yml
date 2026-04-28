@@ -27,7 +27,7 @@ jobs:
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/provider/notely-provider
+          workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/providers/notely-provider
           service_account: cloud-run-deployer@celtic-sunlight-443602-k1.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
