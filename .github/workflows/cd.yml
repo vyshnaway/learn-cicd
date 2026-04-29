@@ -5,7 +5,6 @@ on:
     branches: [main]
 
 jobs:
-
   deploy:
     name: Deploy
     runs-on: ubuntu-latest  
@@ -15,6 +14,13 @@ jobs:
 
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+      ARTIFACT_REGISTRY_REPO: ${{ secrets.ARTIFACT_REGISTRY_REPO }}
+      CLOUD_RUN_SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
+      REGISTRY_REGION: us-central1
+      IMAGE_TAG: app:latest
 
     steps: 
       - name: Check Out Code
@@ -32,8 +38,8 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/providers/notely-provider
-          service_account: cloud-run-deployer@celtic-sunlight-443602-k1.iam.gserviceaccount.com
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
@@ -44,15 +50,13 @@ jobs:
         run: gcloud info
         
       - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev
+        run: gcloud auth configure-docker ${{ env.REGISTRY_REGION }}-docker.pkg.dev
 
       - name: Submit Image to Artifact Registry
         run: |
           gcloud builds submit \
-            --tag us-central1-docker.pkg.dev/celtic-sunlight-443602-k1/notely-ar-repo/app:latest \
+            --tag ${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_TAG }} \
             .
-            
 
       - name: Install Goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -61,4 +65,10 @@ jobs:
         run: ./scripts/migrateup.sh
 
       - name: Deploy to Cloud Run
-        run: gcloud run deploy notely --image us-central1-docker.pkg.dev/celtic-sunlight-443602-k1/notely-ar-repo/app:latest --region us-central1 --allow-unauthenticated --project 253869999413 --max-instances=4
+        run: |
+          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE_NAME }} \
+            --image ${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_TAG }} \
+            --region ${{ env.REGISTRY_REGION }} \
+            --allow-unauthenticated \
+            --project ${{ env.GCP_PROJECT_ID }} \
+            --max-instances=4
