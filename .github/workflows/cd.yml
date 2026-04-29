@@ -5,12 +5,16 @@ on:
     branches: [main]
 
 jobs:
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest  
     permissions:
       contents: read
       id-token: write
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps: 
       - name: Check Out Code
@@ -31,7 +35,6 @@ jobs:
           workload_identity_provider: projects/253869999413/locations/global/workloadIdentityPools/notely-pool/providers/notely-provider
           service_account: cloud-run-deployer@celtic-sunlight-443602-k1.iam.gserviceaccount.com
 
-
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
         with:
@@ -49,3 +52,13 @@ jobs:
           gcloud builds submit \
             --tag us-central1-docker.pkg.dev/celtic-sunlight-443602-k1/notely-ar-repo/app:latest \
             .
+            
+
+      # - name: Install Goose
+      #   run: go install github.com/pressly/goose/v3/cmd/goose@latest
+        
+      # - name: Migrate Database
+      #   run: ./scripts/migrateup.sh
+
+      # - name: Deploy to Cloud Run
+      #   run: gcloud run deploy notely --image us-central1-docker.pkg.dev/celtic-sunlight-443602-k1/notely-ar-repo/app:latest --region us-central1 --allow-unauthenticated --project 253869999413 --max-instances=4
